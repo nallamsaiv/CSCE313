@@ -6,9 +6,9 @@
     Date: 9/15/2024
 	
 	Please include your Name, UIN, and the date below
-	Name:
-	UIN:
-	Date:
+	Name: Venkat Nallam
+	UIN: 532003829
+	Date: 09/29/2024
 */
 #include "common.h"
 #include "FIFORequestChannel.h"
@@ -25,6 +25,7 @@ int main (int argc, char *argv[]) {
 	int message = MAX_MESSAGE;
 	bool create_chan = false;
 	string filename = "";
+	vector<FIFORequestChannel*> channels;
 
 	//Add other arguments here
 	while ((opt = getopt(argc, argv, "p:t:e:f:m:c")) != -1) {
@@ -69,16 +70,17 @@ int main (int argc, char *argv[]) {
 	}
 
     FIFORequestChannel control_chan("control", FIFORequestChannel::CLIENT_SIDE);
-	vector<FIFORequestChannel*> channels;
 	channels.push_back(&control_chan);
 	//Task 4:
 	//Request a new channel
-	if(create_chan == true){
-		MESSAGE_TYPE temp_msg = NEWCHANNEL_MSG;
-		control_chan.cwrite(&temp_msg, sizeof(MESSAGE_TYPE));
-		char temp[MAX_MESSAGE];
-		control_chan.cread(temp, MAX_MESSAGE);
-		channels.push_back(new FIFORequestChannel(temp, FIFORequestChannel::CLIENT_SIDE));
+	if(create_chan == true) {
+		MESSAGE_TYPE channel_message = NEWCHANNEL_MSG;
+    	control_chan.cwrite(&channel_message, sizeof(MESSAGE_TYPE));
+		char* chan_name = new char[MAX_MESSAGE];
+		control_chan.cread(chan_name, MAX_MESSAGE);
+		FIFORequestChannel* new_channel = new FIFORequestChannel(chan_name, FIFORequestChannel::CLIENT_SIDE);
+		channels.push_back(new_channel);
+		delete[] chan_name;
 	}
 	FIFORequestChannel chan = *channels.back();
 	//Task 2:
@@ -160,13 +162,11 @@ int main (int argc, char *argv[]) {
 	// Closing all the channels
 	if(create_chan == true){
 		MESSAGE_TYPE m_2 = QUIT_MSG;
-		FIFORequestChannel last_channel = *channels.back();
-		last_channel.cwrite(&m_2, sizeof(MESSAGE_TYPE));
-		delete channels.back();
+		FIFORequestChannel* channel_delete = channels.back();
+		channel_delete->cwrite(&m_2, sizeof(MESSAGE_TYPE));
+		delete channel_delete;
 		channels.pop_back();
 	}
     MESSAGE_TYPE m = QUIT_MSG;
     chan.cwrite(&m, sizeof(MESSAGE_TYPE));
-
-	waitpid(pid, nullptr, 0);
 }

@@ -35,7 +35,7 @@ int main () {
 
     if(pid1 == 0){
         close(fd[0]);
-        dup2(fd[1], STDOUT_FILENO);
+        dup2(fd[1], 1);
         close(fd[1]);
         execvp(cmd1[0], cmd1);
     }
@@ -52,7 +52,7 @@ int main () {
 
     if(pid2 == 0){
         close(fd[1]);
-        dup2(fd[0], STDIN_FILENO);
+        dup2(fd[0], 0);
         close(fd[0]);
         execvp(cmd2[0], cmd2);
     }

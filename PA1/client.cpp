@@ -1,4 +1,3 @@
-
 /*
 	Author of the starter code
     Yifan Ren

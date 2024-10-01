@@ -1,3 +1,4 @@
+
 /*
 	Author of the starter code
     Yifan Ren
@@ -28,6 +29,7 @@ int main (int argc, char *argv[]) {
 	vector<FIFORequestChannel*> channels;
 
 	//Add other arguments here
+	//added other arguments m and c
 	while ((opt = getopt(argc, argv, "p:t:e:f:m:c")) != -1) {
 		switch (opt) {
 			case 'p':
@@ -55,6 +57,7 @@ int main (int argc, char *argv[]) {
 	//Run the server process as a child of the client process
 	pid_t pid = fork();
 
+	//checks if the fork successfully ran
 	if(pid == -1){
 		perror("fork");
 		exit(EXIT_FAILURE);
@@ -63,17 +66,23 @@ int main (int argc, char *argv[]) {
 	if(pid == 0){
 		char server_msg[MAX_MESSAGE];
 		sprintf(server_msg, "%d", message);
+		//runs the ./server process as a child
 		const char* server_args[] = {"./server", "-m", server_msg, NULL};
 		execvp(server_args[0], (char* const*)server_args);
+		//does not execute if the execvp above is succeful
 		perror("exec of server");
 		exit(EXIT_FAILURE); 
 	}
 
+	//starts the main control channel via fifo
     FIFORequestChannel control_chan("control", FIFORequestChannel::CLIENT_SIDE);
+
+	//addes this to the back of the channels
 	channels.push_back(&control_chan);
 	//Task 4:
 	//Request a new channel
 	if(create_chan == true) {
+		//creates new channel if needed
 		MESSAGE_TYPE channel_message = NEWCHANNEL_MSG;
     	control_chan.cwrite(&channel_message, sizeof(MESSAGE_TYPE));
 		char* chan_name = new char[MAX_MESSAGE];
@@ -82,9 +91,12 @@ int main (int argc, char *argv[]) {
 		channels.push_back(new_channel);
 		delete[] chan_name;
 	}
+
+	//uses the channel that has been created
 	FIFORequestChannel chan = *channels.back();
 	//Task 2:
 	//Request data points
+	//checks of if the client is requesting a specific datapoint
 	if(p != -1 && t != -1.0 && e != -1){
 		char* buf = new char[MAX_MESSAGE];
 		datamsg x(p, t, e);
@@ -95,12 +107,14 @@ int main (int argc, char *argv[]) {
 		cout << "For person " << p << ", at time " << t << ", the value of ecg " << e << " is " << reply << endl;
 		delete[] buf;
 	}else if(p != -1){
+		//checks if the client is requesting for the datapoints
 		ofstream file_out_1;
 		file_out_1.open("received/x1.csv");
 		if(!file_out_1){
 			perror("unable to open file");
 			exit(EXIT_FAILURE);
 		}
+		//for loop that goes over the first 1000 datapoints and rights them to the output file
 		for(double t_curr = 0.0; t_curr < 1000 * 0.004; t_curr += 0.004){
 			char buf_1[MAX_MESSAGE];
 			datamsg x_1(p, t_curr, 1);
@@ -133,15 +147,20 @@ int main (int argc, char *argv[]) {
 	strcpy(buf_3 + sizeof(filemsg), fname.c_str());
 	chan.cwrite(buf_3, len);
 
+	//gets the length of the file requested
 	__int64_t file_length;
 	chan.cread(&file_length, sizeof(__int64_t));
 
+	//creates the output file
 	ofstream file_out_2;
 	file_out_2.open("received/" + fname);
 	if(!file_out_2){
 		perror("unable to open file");
 		exit(EXIT_FAILURE);
 	}
+
+	//iterates through the file and tracks how much of the file has been transeffered using the offest variable
+	//also tracks how much of the file is coming in using size_incoming
 	__int64_t offset = 0;
 	char* buf_4 = new char[message];
 	int size_incoming = 0;
@@ -160,6 +179,7 @@ int main (int argc, char *argv[]) {
 	}
 	//Task 5:
 	// Closing all the channels
+	//closes the channels by writing to the server and then freeing the pointer
 	if(create_chan == true){
 		MESSAGE_TYPE m_2 = QUIT_MSG;
 		FIFORequestChannel* channel_delete = channels.back();

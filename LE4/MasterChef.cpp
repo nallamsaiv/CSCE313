@@ -89,8 +89,13 @@ static void timerHandler( int sig, siginfo_t *si, void *uc )
 
 	/* TODO This Section - 2 */
 	// Officially complete the step using completedSteps and completeCount
+	completedSteps->push_back(comp_item->id);
+    completeCount++;
+	//printing information on the completed step
+	comp_item->PrintComplete();
 
 	// Ready to remove that dependency, call the trigger for the appropriate handler
+	kill(getpid(), SIGUSR1);
 	/* End Section - 2 */
 }
 
@@ -100,6 +105,12 @@ static void timerHandler( int sig, siginfo_t *si, void *uc )
 void RemoveDepHandler(int sig) {
 	/* TODO This Section - 3 */
 	// Foreach step that has been completed since last run, remove it as a dependency
+	for(int completedStepID : *completedSteps){
+    	recipeSteps->RemoveDependency(completedStepID);
+    }
+
+	//clearing the completed vector
+    completedSteps->clear();
 	/* End Section - 3 */
 }
 
@@ -123,10 +134,30 @@ int main(int argc, char **argv)
     sa.sa_flags = SA_SIGINFO;
     sa.sa_sigaction = timerHandler;
     sigemptyset(&sa.sa_mask);
+	sigaction(SIGRTMIN, &sa, NULL);
 
 	/* TODO This Section - 1 */
 	// Associate the signal SIGRTMIN with the sa using the sigaction function
 	// Associate the appropriate handler with the SIGUSR1 signal, for removing dependencies
+	struct sigaction remove_sa;
+	remove_sa.sa_flags = 0;
+    remove_sa.sa_handler = RemoveDepHandler;
+    sigemptyset(&remove_sa.sa_mask);
+    sigaction(SIGUSR1, &remove_sa, NULL);
+
+	//while loop to see if all the steps have been completed and start the timer for steps who haven't  started running yet
+	while(completeCount < recipeSteps->Count()){
+    	vector<Step*> ready_steps = recipeSteps->GetReadySteps();
+		//loop to iterate through all the steps that are ready and create a timer for them
+        for(Step* ready_step : ready_steps){
+            if(ready_step->running == false){
+                int exp = ready_step->duration;
+                makeTimer(ready_step, exp);
+                ready_step->running = true;
+            }
+        }
+		pause();
+    }
 	
 	// Until all steps have been completed, check if steps are ready to be run and create a timer for them if so
 	/* End Section - 1 */

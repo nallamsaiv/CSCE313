@@ -158,6 +158,9 @@ int main(int argc, char **argv)
         }
 		pause();
     }
+
+	delete recipeSteps;
+	delete completedSteps;
 	
 	// Until all steps have been completed, check if steps are ready to be run and create a timer for them if so
 	/* End Section - 1 */

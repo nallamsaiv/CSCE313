@@ -32,25 +32,14 @@ void copyFile(const std::string &src, const std::string &dest, size_t buffer_siz
     close(dest_fd);
 }
 
-double measureTime(const std::string &src, const std::string &dest, size_t buffer_size) {
-    auto start = std::chrono::high_resolution_clock::now();
-    copyFile(src, dest, buffer_size);
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed = end - start;
-    return elapsed.count();
-}
 
 int main(int argc, char *argv[]) {
     std::string src = argv[1];
     std::string dest = argv[2];
-    std::vector<size_t> buffer_sizes = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096};
-
-    std::cout << "Buffer Size (bytes) | Time (seconds)\n";
-    std::cout << "--------------------------------------\n";
+    std::vector<size_t> buffer_sizes = {2048};
 
     for (size_t buffer_size : buffer_sizes) {
-        double timeTaken = measureTime(src, dest, buffer_size);
-        std::cout << buffer_size << "                 | " << timeTaken << " seconds\n";
+        copyFile(src, dest, buffer_size);
     }
 
     return 0;
